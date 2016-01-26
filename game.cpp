@@ -6,35 +6,8 @@ namespace mastermind {
 		Game::console = Console();
 		Game::init(codeLength, totalTrial);
 	}
-	void Game::startNew() {
-		cout << "code length: [4, 6, 8]\n";
-		int codeLenght;
-		cin >> codeLenght;
-		cout << "total trials: [10;20]\n";
-		int totalTrials;
-		cin >> totalTrials;
-		cin.clear();
-		cin.ignore(10000, '\n');
-		Game::init(codeLenght, totalTrials);
-		Game::breakRun();
-	}
-	void Game::updateLevel(int level) {
-		string levelStr = TAB;
-		switch (level) {
-		case LEVEL::EASY:
-			levelStr.append("EASY");
-			break;
-		case LEVEL::MEDIUM:
-			levelStr.append("MEDIUM");
-			break;
-		case LEVEL::HARD:
-			levelStr.append("HARD");
-			break;
-		default:
-			break;
-		}
-		Game::level = level;
-		Game::help[HELP_LINES-1] = levelStr;
+	void Game::breakRun() {
+		throw BREAK;
 	}
 	void Game::doState(int state) {
 		switch (state) {
@@ -78,8 +51,53 @@ namespace mastermind {
 			break;
 		}
 	}
-	void Game::breakRun() {
-		throw BREAK;
+	void Game::generateCode() {
+		char* dataRange = (char*)malloc(sizeof(char) * COLOR_POSSIBILITIES);
+		for (int i = 0; i < COLOR_POSSIBILITIES; i++) {
+			dataRange[i] = 'A' + i;
+		}
+		srand(time(NULL));
+		Game::secretCode = (char*)malloc(sizeof(char) * Game::codeLength);
+		int* temp = (int*)malloc(sizeof(int) * COLOR_POSSIBILITIES);
+		for (int i = 0; i < Game::codeLength; i++) {
+			int randomIndex = rand() % COLOR_POSSIBILITIES;
+			while (temp[randomIndex] == true) {
+				randomIndex = rand() % COLOR_POSSIBILITIES;
+			}
+			temp[randomIndex] = true;
+			Game::secretCode[i] = dataRange[randomIndex];
+			Game::tray[Game::totalTrial][i] = Game::secretCode[i];
+		}
+		temp = NULL;
+	}
+	void Game::handleInput(string input) {
+		if (input == "quit") {
+			Game::stop();
+		}
+		else if (input == "new") {
+			Game::startNew();
+		}
+		else if (input == "restart") {
+			Game::init(Game::codeLength, Game::totalTrial);
+		}
+		else if (input == "level easy") {
+			Game::updateLevel(LEVEL::EASY);
+		}
+		else if (input == "level medium") {
+			Game::updateLevel(LEVEL::MEDIUM);
+		}
+		else if (input == "level hard") {
+			Game::updateLevel(LEVEL::HARD);
+		}
+		else if (input == "hack") {
+			Game::hack = !Game::hack;
+		}
+		else if (Game::running) {
+			Game::match(input);
+		}
+		else {
+			Game::doState(STATE::STOPPED);
+		}
 	}
 	void Game::init(int codeLength, int totalTrial) {
 		if (codeLength % 2 != 0) {
@@ -111,24 +129,78 @@ namespace mastermind {
 		Game::generateCode();
 		Game::updateLevel(Game::level);
 	}
-	void Game::generateCode() {
-		char* dataRange = (char*)malloc(sizeof(char) * COLOR_POSSIBILITIES);
-		for (int i = 0; i < COLOR_POSSIBILITIES; i++) {
-			dataRange[i] = 'A' + i;
+	void Game::match(string from) {
+		int length = from.size();
+		if (length != Game::codeLength) {
+			string msg = "Input must contains ";
+			msg.append(to_string(Game::codeLength));
+			msg.append(" char !");
+			throw invalid_argument(msg);
 		}
-		srand(time(NULL));
-		Game::secretCode = (char*)malloc(sizeof(char) * Game::codeLength);
-		int* temp = (int*)malloc(sizeof(int) * COLOR_POSSIBILITIES);
+		int win = 0;
 		for (int i = 0; i < Game::codeLength; i++) {
-			int randomIndex = rand() % COLOR_POSSIBILITIES;
-			while (temp[randomIndex] == true) {
-				randomIndex = rand() % COLOR_POSSIBILITIES;
+			char at = from.at(i);
+			at = toupper(at);
+			if (at < 'A' || at >= 'A' + COLOR_POSSIBILITIES) {
+				for (int j = i; j >= 0; j--) {
+					Game::tray[Game::stepIndex][j] = NULL;
+					Game::result[Game::stepIndex][j] = NULL;
+				}
+				throw invalid_argument("Invalid input char, every char must be an uper char btw A & H");
 			}
-			temp[randomIndex] = true;
-			Game::secretCode[i] = dataRange[randomIndex];
-			Game::tray[Game::totalTrial][i] = Game::secretCode[i];
+			Game::tray[Game::stepIndex][i] = at;
+			char match = '_';
+			if (at == Game::secretCode[i]) {
+				match = MATCH_CODE::X;
+			}
+			else {
+				for (int j = 0; j < Game::codeLength; j++) {
+					if (at == Game::secretCode[j]) {
+						match = MATCH_CODE::O;
+						break;
+					}
+				}
+			}
+			if (match == MATCH_CODE::X) {
+				win++;
+			}
+			Game::result[Game::stepIndex][i] = match;
 		}
-		temp = NULL;
+		if (win == Game::codeLength) {
+			cout << "YOU WIN !\n";
+			cout << "after " << (Game::stepIndex + 1) << " trials\n";
+			Game::doState(STATE::STOPPED);
+		}
+		Game::stepIndex++;
+	}
+	void Game::print() {
+		system("cls");
+		int rowCount = 0;
+		int totalRow = Game::hack ? Game::totalTrial : Game::totalTrial - 1;
+		cout << "\n";
+		for (int i = totalRow; i >= 0; i--) {
+			Game::printRow(i, rowCount);
+			rowCount+= 2;
+		}
+		cout << TAB;
+		for (int i = 0; i < Game::codeLength; i++) {
+			cout << "+---";
+		}
+		cout << "+\n\n" << TAB << " ";
+		for (int i = 0; i < COLOR_POSSIBILITIES; i++) {
+			if (i == (COLOR_POSSIBILITIES / 2)) {
+				cout << "\n" << TAB << " ";
+			}
+			char letter = 'A' + i;
+			Game::printColor(letter);
+		}
+		cout << "\n\n";
+	}
+	void Game::printColor(char letter) {
+		Game::console.backColor(letter - 'A');
+		cout << " " << letter << " ";
+		Game::console.resetBackColor();
+		cout << " ";
 	}
 	void Game::printRow(int stepIndex, int rowCount) {
 		char* row = Game::tray[stepIndex];
@@ -202,127 +274,6 @@ namespace mastermind {
 		}
 		cout << "\n";
 	}
-	void Game::print() {
-		system("cls");
-		int rowCount = 0;
-		int totalRow = Game::hack ? Game::totalTrial : Game::totalTrial - 1;
-		cout << "\n";
-		for (int i = totalRow; i >= 0; i--) {
-			Game::printRow(i, rowCount);
-			rowCount+= 2;
-		}
-		cout << TAB;
-		for (int i = 0; i < Game::codeLength; i++) {
-			cout << "+---";
-		}
-		cout << "+\n\n" << TAB << " ";
-		for (int i = 0; i < COLOR_POSSIBILITIES; i++) {
-			if (i == (COLOR_POSSIBILITIES / 2)) {
-				cout << "\n" << TAB << " ";
-			}
-			char letter = 'A' + i;
-			Game::printColor(letter);
-		}
-		cout << "\n\n";
-	}
-	void Game::handleInput(string input) {
-		if (input == "quit") {
-			Game::stop();
-		}
-		else if (input == "new") {
-			Game::startNew();
-		}
-		else if (input == "restart") {
-			Game::init(Game::codeLength, Game::totalTrial);
-		}
-		else if (input == "level easy") {
-			Game::updateLevel(LEVEL::EASY);
-		}
-		else if (input == "level medium") {
-			Game::updateLevel(LEVEL::MEDIUM);
-		}
-		else if (input == "level hard") {
-			Game::updateLevel(LEVEL::HARD);
-		}
-		else if (input == "hack") {
-			Game::hack = !Game::hack;
-		}
-		else if (Game::running) {
-			Game::match(input);
-		}
-		else {
-			Game::doState(STATE::STOPPED);
-		}
-	}
-	void Game::match(string from) {
-		int length = from.size();
-		if (length != Game::codeLength) {
-			string msg = "Input must contains ";
-			msg.append(to_string(Game::codeLength));
-			msg.append(" char !");
-			throw invalid_argument(msg);
-		}
-		int win = 0;
-		for (int i = 0; i < Game::codeLength; i++) {
-			char at = from.at(i);
-			at = toupper(at);
-			if (at < 'A' || at >= 'A' + COLOR_POSSIBILITIES) {
-				for (int j = i; j >= 0; j--) {
-					Game::tray[Game::stepIndex][j] = NULL;
-					Game::result[Game::stepIndex][j] = NULL;
-				}
-				throw invalid_argument("Invalid input char, every char must be an uper char btw A & H");
-			}
-			Game::tray[Game::stepIndex][i] = at;
-			char match = '_';
-			if (at == Game::secretCode[i]) {
-				match = MATCH_CODE::X;
-			}
-			else {
-				for (int j = 0; j < Game::codeLength; j++) {
-					if (at == Game::secretCode[j]) {
-						match = MATCH_CODE::O;
-						break;
-					}
-				}
-			}
-			if (match == MATCH_CODE::X) {
-				win++;
-			}
-			Game::result[Game::stepIndex][i] = match;
-		}
-		if (win == Game::codeLength) {
-			cout << "YOU WIN !\n";
-			cout << "after " << (Game::stepIndex + 1) << " trials\n";
-			Game::doState(STATE::STOPPED);
-		}
-		Game::stepIndex++;
-	}
-	void Game::run() {
-		Game::running = true;
-		while (Game::running && Game::stepIndex < Game::totalTrial) {
-			for (int state = 0; state <= STATE::INPUT; state++) {
-				Game::doState(state);
-			}
-		}
-		if (Game::stepIndex >= Game::totalTrial) {
-			Game::doState(STATE::PRINT);
-			cout << "YOU LOOSE !\n";
-			Game::doState(STATE::STOPPED);
-		}
-	}
-	void Game::stop() {
-		if (Game::running) {
-			Game::running = false;
-			Game::breakRun();
-		}
-	}
-	void Game::printColor(char letter) {
-		Game::console.backColor(letter - 'A');
-		cout << " " << letter << " ";
-		Game::console.resetBackColor();
-		cout << " ";
-	}
 	string Game::readLine() {
 		string input = string();
 		int count = 0;
@@ -391,5 +342,54 @@ namespace mastermind {
 		}
 		cout << "\n";
 		return input;
+	}
+	void Game::run() {
+		Game::running = true;
+		while (Game::running && Game::stepIndex < Game::totalTrial) {
+			for (int state = 0; state <= STATE::INPUT; state++) {
+				Game::doState(state);
+			}
+		}
+		if (Game::stepIndex >= Game::totalTrial) {
+			Game::doState(STATE::PRINT);
+			cout << "YOU LOOSE !\n";
+			Game::doState(STATE::STOPPED);
+		}
+	}
+	void Game::startNew() {
+		cout << "code length: [4, 6, 8]\n";
+		int codeLenght;
+		cin >> codeLenght;
+		cout << "total trials: [10;20]\n";
+		int totalTrials;
+		cin >> totalTrials;
+		cin.clear();
+		cin.ignore(10000, '\n');
+		Game::init(codeLenght, totalTrials);
+		Game::breakRun();
+	}
+	void Game::stop() {
+		if (Game::running) {
+			Game::running = false;
+			Game::breakRun();
+		}
+	}
+	void Game::updateLevel(int level) {
+		string levelStr = TAB;
+		switch (level) {
+		case LEVEL::EASY:
+			levelStr.append("EASY");
+			break;
+		case LEVEL::MEDIUM:
+			levelStr.append("MEDIUM");
+			break;
+		case LEVEL::HARD:
+			levelStr.append("HARD");
+			break;
+		default:
+			break;
+		}
+		Game::level = level;
+		Game::help[HELP_LINES - 1] = levelStr;
 	}
 }

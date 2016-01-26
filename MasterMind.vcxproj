@@ -153,8 +153,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="console.cpp" />
-    <ClCompile Include="_game.cpp" />
-    <ClCompile Include="_mastermind.cpp" />
+    <ClCompile Include="game.cpp" />
+    <ClCompile Include="mastermind.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
