@@ -103,11 +103,11 @@ namespace mastermind {
 		if (codeLength % 2 != 0) {
 			throw invalid_argument("The code lenght must be even number");
 		}
-		if (codeLength < 4 && codeLength > 8) {
-			throw invalid_argument("The code lenght must be between 2 & 8 (include)");
+		if (codeLength < 4 || codeLength > 8) {
+			throw invalid_argument("The code lenght must be between 4 & 8 (include)");
 		}
-		if (totalTrial < 10 && totalTrial > 20) {
-			throw invalid_argument("The retries count must be between 2 & 20 (include)");
+		if (totalTrial < 10 || totalTrial > 20) {
+			throw invalid_argument("The retries count must be between 10 & 20 (include)");
 		}
 		Game::stepIndex = 0;
 		Game::codeLength = codeLength;
