@@ -4,6 +4,10 @@
 
 from: https://en.wikipedia.org/wiki/Mastermind_(board_game)
 
+##USE
+
+Dowload and install: https://www.microsoft.com/en-us/download/details.aspx?id=48145
+
 ##RULES
 - The computer picks a sequence of colors. The number of colors is the code length. The default code length is 4 but it can be changed when starting a new game.
 - The objective of the game is to guess the exact positions of the colors in the computer's sequence.
