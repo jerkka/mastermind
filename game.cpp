@@ -3,7 +3,7 @@
 
 namespace mastermind {
 	Game::Game(int codeLength, int totalTrial) {
-		Game::console = Console();
+		Game::console = Console(500, 500);
 		Game::init(codeLength, totalTrial);
 	}
 	void Game::breakRun() {

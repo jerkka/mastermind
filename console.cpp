@@ -2,9 +2,19 @@
 #include "console.h"
 
 namespace mastermind_utils {
-	Console::Console() {
+	Console::Console(int width, int height) {
 		Console::hstdin = GetStdHandle(STD_INPUT_HANDLE);
 		Console::hstdout = GetStdHandle(STD_OUTPUT_HANDLE);
+		if (!GetConsoleScreenBufferInfo(Console::hstdout, &csbi)) {
+			throw runtime_error("You must be attached to a human.");
+		}
+		COORD dummy;
+		SetConsoleDisplayMode(Console::hstdout, CONSOLE_FULLSCREEN_MODE, &dummy);
+		CONSOLE_FONT_INFOEX font;
+		GetCurrentConsoleFontEx(Console::hstdout, false, &font);
+		font.dwFontSize.X = 10;
+		font.dwFontSize.Y = 18;
+		SetCurrentConsoleFontEx(Console::hstdout, false, &font);
 	}
 	void Console::color(int color) {
 		SetConsoleTextAttribute(Console::hstdout, color);

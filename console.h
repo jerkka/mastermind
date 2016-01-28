@@ -6,6 +6,7 @@ namespace mastermind_utils{
 	public:
 		HANDLE hstdin;
 		HANDLE hstdout;
+		CONSOLE_SCREEN_BUFFER_INFO csbi;
 		int tColor = 15;
 		int bColor;
 	public:
@@ -28,7 +29,7 @@ namespace mastermind_utils{
 			WHITE = 15,
 			BACKGROUND_WHITE = 0xF6
 		};
-		Console();
+		Console(int width = 500, int height = 500);
 		void color(int color);
 		void textColor(int color);
 		void backColor(int color);
